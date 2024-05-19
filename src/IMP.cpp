@@ -161,14 +161,12 @@ int IMP::system_init() {
     ret = IMP_ISP_AddSensor(&sinfo);
     if (ret < 0) {
         LOG_DEBUG("Error: IMP_ISP_AddSensor() == " + std::to_string(ret));
-        return ret;
     }
     LOG_DEBUG("Sensor Added");
 
     ret = IMP_ISP_EnableSensor();
     if (ret < 0) {
         LOG_DEBUG("Error: IMP_ISP_EnableSensor() == " + std::to_string(ret));
-        return ret;
     }
     LOG_DEBUG("Sensor Enabled");
 
@@ -185,7 +183,6 @@ int IMP::system_init() {
     ret = IMP_ISP_EnableTuning();
     if (ret < 0) {
         LOG_DEBUG("ERROR: IMP_ISP_EnableTuning() == " + std::to_string(ret));
-        return ret;
     }
     LOG_DEBUG("IMP_ISP_EnableTuning enabled");
 
@@ -201,7 +198,6 @@ int IMP::system_init() {
     ret = IMP_ISP_Tuning_SetSensorFPS(Config::singleton()->sensorFps, 1);
     if (ret < 0) {
         LOG_DEBUG("ERROR: IMP_ISP_Tuning_SetSensorFPS() == " + std::to_string(ret));
-        return ret;
     }
     LOG_DEBUG("IMP_ISP_Tuning_SetSensorFPS == " + std::to_string(Config::singleton()->sensorFps));
 
@@ -209,7 +205,6 @@ int IMP::system_init() {
     ret = IMP_ISP_Tuning_SetISPRunningMode(IMPISP_RUNNING_MODE_DAY);
     if (ret < 0) {
         LOG_DEBUG("ERROR: IMP_ISP_Tuning_SetISPRunningMode() == " + std::to_string(ret));
-        return ret;
     }
     LOG_DEBUG("IMP_ISP_Tuning_SetISPRunningMode == " + std::to_string(IMPISP_RUNNING_MODE_DAY));
 
