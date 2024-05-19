@@ -107,7 +107,6 @@ int IMP::framesource_init() {
 //    }
 	LOG_INFO("IMP_FrameSource_GetChnFifoAttr set");
 
-	LOG_INFO
     fifo.maxdepth = 0;
     ret = IMP_FrameSource_SetChnFifoAttr(0, &fifo);
     if (ret < 0) {
