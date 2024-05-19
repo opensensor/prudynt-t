@@ -182,9 +182,9 @@ int IMP::system_init() {
     //Denoising, WDR, Night Mode, and FPS customization require this.
     ret = IMP_ISP_EnableTuning();
     if (ret < 0) {
-        LOG_DEBUG("ERROR: IMP_ISP_EnableTuning() == " + std::to_string(ret));
+		LOG_INFO("ERROR: IMP_ISP_EnableTuning() == " + std::to_string(ret));
     }
-    LOG_DEBUG("IMP_ISP_EnableTuning enabled");
+	LOG_INFO("IMP_ISP_EnableTuning enabled");
 
     /* Set tuning defaults; on some SoC platforms, if we don't do this, the stream will be dark until manually set */
     IMP_ISP_Tuning_SetContrast(128);
@@ -193,20 +193,20 @@ int IMP::system_init() {
     IMP_ISP_Tuning_SetBrightness(128);
     IMP_ISP_Tuning_SetISPBypass(IMPISP_TUNING_OPS_MODE_ENABLE);
     IMP_ISP_Tuning_SetAntiFlickerAttr(IMPISP_ANTIFLICKER_60HZ);
-    LOG_DEBUG("ISP Tuning Defaults set");
+	LOG_INFO("ISP Tuning Defaults set");
 
     ret = IMP_ISP_Tuning_SetSensorFPS(Config::singleton()->sensorFps, 1);
     if (ret < 0) {
-        LOG_DEBUG("ERROR: IMP_ISP_Tuning_SetSensorFPS() == " + std::to_string(ret));
+		LOG_INFO("ERROR: IMP_ISP_Tuning_SetSensorFPS() == " + std::to_string(ret));
     }
-    LOG_DEBUG("IMP_ISP_Tuning_SetSensorFPS == " + std::to_string(Config::singleton()->sensorFps));
+	LOG_INFO("IMP_ISP_Tuning_SetSensorFPS == " + std::to_string(Config::singleton()->sensorFps));
 
     // Set the ISP to DAY on launch
     ret = IMP_ISP_Tuning_SetISPRunningMode(IMPISP_RUNNING_MODE_DAY);
     if (ret < 0) {
-        LOG_DEBUG("ERROR: IMP_ISP_Tuning_SetISPRunningMode() == " + std::to_string(ret));
+		LOG_INFO("ERROR: IMP_ISP_Tuning_SetISPRunningMode() == " + std::to_string(ret));
     }
-    LOG_DEBUG("IMP_ISP_Tuning_SetISPRunningMode == " + std::to_string(IMPISP_RUNNING_MODE_DAY));
+	LOG_INFO("IMP_ISP_Tuning_SetISPRunningMode == " + std::to_string(IMPISP_RUNNING_MODE_DAY));
 
 
     return ret;
