@@ -44,7 +44,7 @@ IMPFSChnAttr IMP::create_fs_attr() {
     //PIX_FMT_UYVY422
     //PIX_FMT_NV12
     //Of those, I have only gotten PIX_FMT_NV12 to produce frames.
-    out.pixFmt = PIX_FMT_NV12;
+    out.pixFmt = PIX_FMT_YUYV422;
     out.outFrmRateNum = Config::singleton()->stream0fps;
     out.outFrmRateDen = 1;
     out.nrVBs = Config::singleton()->stream0buffers;
@@ -68,12 +68,9 @@ int IMP::framesource_init() {
     int rot_height = Config::singleton()->stream0height;
     int rot_width = Config::singleton()->stream0width;
 
-     IMPFSChnAttr fs_chn_attr = create_fs_attr();
-	 if (fs_chn_attr == NULL) {
-		LOG_INFO("IMPFSChnAttr == NULL");
-		return -1;
-	 }
+	IMPFSChnAttr fs_chn_attr = create_fs_attr();
 
+	LOG_INFO("IMP_FrameSource_CreateChn")
     ret = IMP_FrameSource_CreateChn(1, &fs_chn_attr);
     if (ret < 0) {
 		LOG_INFO("IMP_FrameSource_CreateChn() == " + std::to_string(ret));
