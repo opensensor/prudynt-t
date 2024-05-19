@@ -68,7 +68,7 @@ int IMP::framesource_init() {
     int rot_height = Config::singleton()->stream0height;
     int rot_width = Config::singleton()->stream0width;
 
-    IMPFSChnAttr fs_chn_attr = create_fs_attr();
+    // IMPFSChnAttr fs_chn_attr = create_fs_attr();
 
 #if !defined(KERNEL_VERSION_4)
 #if defined(PLATFORM_T31)
@@ -84,19 +84,19 @@ int IMP::framesource_init() {
 #endif
 #endif
 
-    ret = IMP_FrameSource_CreateChn(0, &fs_chn_attr);
-    if (ret < 0) {
-		LOG_INFO("IMP_FrameSource_CreateChn() == " + std::to_string(ret));
-        return ret;
-    }
-	LOG_INFO("IMP_FrameSource_CreateChn created");
-
-    ret = IMP_FrameSource_SetChnAttr(0, &fs_chn_attr);
-    if (ret < 0) {
-		LOG_INFO("IMP_FrameSource_SetChnAttr() == " + std::to_string(ret));
-        return ret;
-    }
-	LOG_INFO("IMP_FrameSource_SetChnAttr set");
+//    ret = IMP_FrameSource_CreateChn(0, &fs_chn_attr);
+//    if (ret < 0) {
+//		LOG_INFO("IMP_FrameSource_CreateChn() == " + std::to_string(ret));
+//        return ret;
+//    }
+//	LOG_INFO("IMP_FrameSource_CreateChn created");
+//
+//    ret = IMP_FrameSource_SetChnAttr(0, &fs_chn_attr);
+//    if (ret < 0) {
+//		LOG_INFO("IMP_FrameSource_SetChnAttr() == " + std::to_string(ret));
+//        return ret;
+//    }
+//	LOG_INFO("IMP_FrameSource_SetChnAttr set");
 
     IMPFSChnFifoAttr fifo;
 
