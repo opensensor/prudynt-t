@@ -157,12 +157,12 @@ int IMP::system_init() {
     }
     LOG_DEBUG("ISP Opened!");
 
-    IMPSensorInfo sinfo = create_sensor_info(Config::singleton()->sensorModel.c_str());
-    ret = IMP_ISP_AddSensor(&sinfo);
-    if (ret < 0) {
-        LOG_DEBUG("Error: IMP_ISP_AddSensor() == " + std::to_string(ret));
-    }
-    LOG_DEBUG("Sensor Added");
+//    IMPSensorInfo sinfo = create_sensor_info(Config::singleton()->sensorModel.c_str());
+//    ret = IMP_ISP_AddSensor(&sinfo);
+//    if (ret < 0) {
+//        LOG_DEBUG("Error: IMP_ISP_AddSensor() == " + std::to_string(ret));
+//    }
+//    LOG_DEBUG("Sensor Added");
 
     ret = IMP_ISP_EnableSensor();
     if (ret < 0) {
