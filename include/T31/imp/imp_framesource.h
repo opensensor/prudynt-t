@@ -18,24 +18,24 @@ extern "C"
 
 /**
  * @file
- * The header file of FrameSource
+ * FrameSource模块头文件
  */
 
 /**
  * @defgroup IMP_FrameSource
  * @ingroup imp
- * @brief Video Source is the image source of IMP system, it can set some functions such as setting the image resolution, cropping, scaling and other properties as well as the back-end noise reduction function.
+ * @brief 视频源，是IMP系统的图像数据源，可设置图像的分辨率、裁减、缩放等属性，以及后端降噪功能
  *
- * FrameSource is a data flow related to the concept, you can set the image resolution, format, etc., and provide the original image to the back-end.
+ * FrameSource是一个数据流相关概念，可以设置图像分辨率，格式等，并向后端提供原始图像。
  *
- * The scheme of FrameSource is as follow：
- * @image html framesource.png
- * According to this image above, FrameSource has 3 outputs, all of them can be used for encoding
- * *Channel 0 : High clear video stream
- * *Channel 1 : Standard clear video stream, or IVS can only do the algorithm of data source
- * *Channel 2 : Expands the channel, is is used in special applications, it is not recommended to use it.
- * Note: The video that frame channel-1 output maybe used to encode and analyse. \n
- * The example of FrameSource's operating instruction is below,
+ * FrameSource的结构如下图：
+ * @image html FrameSource.png
+ * 如上图所示，FrameSource有三路输出，三路输出均可用来编码，其中：
+ * * Channel 0一般作为高清视频流
+ * * Channel 1一般作为标清视频流，或者IVS只能算法的数据源
+ * * Channel 2是拓展通道，在特殊应用下使用，一般不建议使用
+ *
+ * FrameSource的初始化步骤如下（以两路输出为例）：
  * @code
  * IMPFSChnAttr fs_chn_attr;
  * fs_chn_attr.pixFmt = PIX_FMT_NV12;
@@ -54,538 +54,436 @@ extern "C"
  * fs_chn_attr.scaler.outwidth = 320;
  * fs_chn_attr.scaler.outheight = 240;
  *
- * ret = IMP_FrameSource_CreateChn(0, &fs_chn_attr); //step.1 Create Channel0
+ * ret = IMP_FrameSource_CreateChn(0, &fs_chn_attr); //step.1 创建Channel 0
  * if (ret < 0) {
  *     printf("FrameSource_CreateChn(0) error\n");
  *     goto createchn_err;
  * }
  *
- * ret = IMP_FrameSource_EnableChn(0); //step.2 Enable Channel 0, Channel 0 starts to output images.
+ * ret = IMP_FrameSource_EnableChn(0); //step.2 Enable Channel 0，channel 0开始输出图像
  * if (ret < 0) {
  *     printf("EnableChn(0) error\n";
  *     return enablechn_err;
  * }
  *
- *  / / so far, FrameSource began to pass data to the back-end Group
+ * //至此，FrameSource开始向后端Group传递数据
  *
- *
- * ret = IMP_FrameSource_DisableChn(0); //step.3 Disable channel 0, Channel 0 stops to output images
+ * ret = IMP_FrameSource_DisableChn(0); //step.3 Disable channel 0，channel 0停止输出图像
  * if (ret < 0) {
  *     printf("FrameSource_DisableChn(0) error\n");
  *     return disablechn_err;
  * }
  *
- * ret = IMP_FrameSource_DestroyChn(0); //step.4 destroy channel 0
+ * ret = IMP_FrameSource_DestroyChn(0); //step.4 销毁channel 0
  * if (ret < 0) {
  *     printf("FrameSource_DestroyChn error\n");
  *     return destorychn_err;
  * }
  * @endcode
- * There are more examples in the content of Samples.
+ * 更多使用方法请参考Samples
  * @{
  */
 
 /**
-* The structure of cropping operation
+* 通道裁剪结构体
 */
 typedef struct {
-	int enable;		/**< Set the parameter to enable/disable cropping */
-	int left;		/**< the X offset of starting pixel */
-	int top;		/**< the Y offset of starting pixel */
-	int width;		/**< the cropped horizontal window size (width) */
-	int height;		/**< the cropped vertical window size (height) */
+	int enable;		/**< 使能裁剪功能 */
+	int left;		/**< 裁剪左起始点 */
+	int top;		/**< 裁剪上起始点 */
+	int width;		/**< 图片裁剪宽度 */
+	int height;		/**< 图片裁剪高度 */
 } IMPFSChnCrop;
 
 /**
-* The structure of scaling operation
+* 通道缩放结构体
 */
 typedef struct {
-	int enable;		/**< Set to the parameter to enable/disable scaling */
-	int outwidth;		/**< the horizontal window size after scaling */
-	int outheight;		/**< the vertical window size after scaling */
+	int enable;		/**< 使能缩放功能 */
+	int outwidth;	/**< 缩放后图片宽度 */
+	int outheight;	/**< 缩放后图片高度 */
 } IMPFSChnScaler;
 
 typedef enum {
-	FS_PHY_CHANNEL,			/**< physics frame channel */
-	FS_EXT_CHANNEL,			/**< virtual frame channel */
+	FS_PHY_CHANNEL,			/**< 物理通道 */
+	FS_EXT_CHANNEL,			/**< 拓展通道 */
 } IMPFSChnType;
 
 /**
-* Channel FIFO Type
+* 通道FIFO类型
 */
 typedef enum {
-	FIFO_CACHE_PRIORITY = 0,	/**< FIFO caches first，then output data */
-	FIFO_DATA_PRIORITY,			/**< FIFO output data first, then caches */
+	FIFO_CACHE_PRIORITY = 0,	/**< FIFO 优先缓存，然后输出数据 */
+	FIFO_DATA_PRIORITY,			/**< FIFO 优先输出数据，然后缓存 */
 } IMPFSChnFifoType;
 
-typedef enum {
-	IMP_FSCHANNEL_STATE_CLOSE, /**< fs channel not created or destroied*/
-	IMP_FSCHANNEL_STATE_OPEN,  /**< fs channel create but not enable*/
-	IMP_FSCHANNEL_STATE_RUN,   /**<fs channel created and enabled*/
-} IMPFSChannelState;
-
 /**
-* The structure of FIFO Channel's attributes
+* 通道FIFO属性结构体
 */
 typedef struct {
-	int maxdepth;				/**< FIFO maximum depth */
-	IMPFSChnFifoType type;		/**< Channel FIFO Type */
+	int maxdepth;				/**< FIFO 最大深度 */
+	IMPFSChnFifoType type;			/**< 通道FIFO类型 */
 } IMPFSChnFifoAttr;
 
 /**
- * The structure of frame channel's attributes
+ * 通道属性结构体
  */
 typedef struct {
-	int picWidth;				/**< output image width */
-	int picHeight;				/**< output image height */
-	IMPPixelFormat pixFmt;			/**< output image format */
-	IMPFSChnCrop crop;			/**< the attribute of image cropping */
-	IMPFSChnScaler scaler;			/**< the attribute of image scaling */
-	int outFrmRateNum;			/**< the molecular of output fps */
-	int outFrmRateDen;			/**< the denominator of output fps */
-	int nrVBs;				/**< the number of Video buffers */
-	IMPFSChnType type;			/**< the type of the frame channel */
-	IMPFSChnCrop fcrop;			/**< the attribute of the frame channel */
+	int picWidth;				/**< 图片宽度 */
+	int picHeight;				/**< 图片高度 */
+	IMPPixelFormat pixFmt;		/**< 图片格式 */
+	IMPFSChnCrop crop;			/**< 图片裁剪属性 */
+	IMPFSChnScaler scaler;		/**< 图片缩放属性 */
+	int outFrmRateNum;			/**< 通道的输出帧率分子 */
+	int outFrmRateDen;			/**< 通道的输出帧率分母 */
+	int nrVBs;					/**< Video buffer数量 */
+	IMPFSChnType type;			/**< 通道类型 */
 } IMPFSChnAttr;
 
 /**
  * @fn int IMP_FrameSource_CreateChn(int chnNum, IMPFSChnAttr *chnAttr)
  *
- * Create a frame channel
+ * 创建通道
  *
- * @param[in] chnNum Id of frame channel
- * @param[in] chnAttr  the pointer of the frame channel's attribute
+ * @param[in] chnNum 通道号
+ * @param[in] chnAttr 通道属性结构体指针
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark Create a channel to provide a data source to the back-end module; \n
- * you can set the channel related attributes, including: the width of the picture, the height of the picture, the picture format, channel output frame rate, number of cache buf, cropping and scaling properties.
- *  On the chip of T10, frame channel 0 and 1 are physics channel, channel 2 and 3 are vritual.
- * @attention none.
+ * @remark 创建通道，给后端模块提供数据源; \n
+ * 可以设置通道的相关属性，包括：图片宽度，图片高度，图片格式，通道的输出帧率, 缓存buf数，裁剪和缩放属性。\n
+ * 对于T10，通道0、1只能被设置为物理通道，通道2,3只能被设置为拓展通道。
+ *
+ * @attention 无。
  */
-
 int IMP_FrameSource_CreateChn(int chnNum, IMPFSChnAttr *chn_attr);
 
 /**
  * @fn IMP_FrameSource_DestroyChn(int chnNum)
  *
- * Destroy the selected frame channel.
+ * 销毁通道
  *
- * @param[in] chnNum Id of frame channel
+ * @param[in] chnNum 通道号
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark the function will free some resources of the frame channel.
+ * @remark 销毁通道
  *
- * @attention If the channel has been enabled (IMP_FrameSource_EnableChn), please disable it (IMP_FrameSource_DisableChn) before calling the current function.
+ * @attention 如果程序调用过IMP_FrameSource_EnableChn，一定要调用IMP_FrameSource_DisableChn之后，再使用此函数。
  */
 int IMP_FrameSource_DestroyChn(int chnNum);
 
 /**
  * @fn int IMP_FrameSource_EnableChn(int chnNum)
  *
- * Enable the selected frame channel.
+ * 使能通道
  *
- * @param[in] chnNum Id of frame channel
+ * @param[in] chnNum 通道号
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none
+ * @remark 无
  *
- * @attention Before calling the function, the frame channel has to been created.
+ * @attention 在使用这个函数之前，必须确保所使能的通道已经创建.
  */
 int IMP_FrameSource_EnableChn(int chnNum);
 
 /**
  * @fn int IMP_FrameSource_DisableChn(int chnNum)
  *
- * Disable the selected frame channel.
+ * 关闭通道
  *
- * @param[in] chnNum Id of frame channel
+ * @param[in] chnNum 通道号
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none
+ * @remark 无
  *
- * @attention none
+ * @attention 无
  */
 int IMP_FrameSource_DisableChn(int chnNum);
 
 /**
- * @fn int IMP_FrameSource_SetSource(int extchnNum, int sourcechnNum)
- *
- * Set sourcechnNum of extchnNum
- *
- * @param[in] extchnNum extchnNum
- *
- * @param[in] sourcechnNum sourcechnNum
- *
- * @retval 0 means success
- * @retval Other values means failure, its value is an error code
- *
- * @remark NONE
- *
- * @attention After IMP_FrameSource_CreateChn and Before IMP_FrameSource_EnableChn to use
- */
-int IMP_FrameSource_SetSource(int extchnNum, int sourcechnNum);
-
-/**
  * @fn int IMP_FrameSource_GetChnAttr(int chnNum, IMPFSChnAttr *chnAttr)
  *
- * Obtains the frame channel attribute.
+ * 获得通道属性
  *
- * @param[in] chnNum Id of frame channel
+ * @param[in] chnNum 通道号
  *
- * @param[out] chnAttr Pointer of the channel's attribute.
+ * @param[out] chnAttr 通道属性结构体指针
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark The attribute contains elements such as: the width ,height and format of the image; the output video FPS, the number of buffers, cropping and scaling properties.
+ * @remark 可以获得通道的相关属性，包括：图片宽度，图片高度，图片格式，通道的输出帧率, 缓存buf数，裁剪和缩放属性.
  *
- * @attention none
+ * @attention 无
  */
 int IMP_FrameSource_GetChnAttr(int chnNum, IMPFSChnAttr *chnAttr);
 
 /**
  * @fn int IMP_FrameSource_SetChnAttr(int chnNum, const IMPFSChnAttr *chnAttr)
  *
- * Sets the frame channel attribute.
+ * 设置通道属性
  *
- * @param[in] chnNum Id of frame channel
+ * @param[in] chnNum 通道号
  *
- * @param[out] chnAttr Pointer of the channel's attribute.
+ * @param[in] chnAttr 通道属性结构体指针
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark The attribute contains elements such as: the width ,height and format of the image; the output video FPS, the number of buffers, cropping and scaling properties.
+ * @remark 可以设置通道的相关属性，包括：图片宽度，图片高度，图片格式，通道的输出帧率, 缓存buf数，裁剪和缩放属性.
  *
- * @attention none
+ * @attention 无
  */
 int IMP_FrameSource_SetChnAttr(int chnNum, const IMPFSChnAttr *chnAttr);
 
 /**
  * @fn IMP_FrameSource_SetFrameDepth(int chnNum, int depth)
  *
- * Sets the maximum space(depth) for the images
+ * 设置可获取的图像最大深度
  *
- * @param[in] chnNum  Id of frame channel
- * @param[in] depth  the maximum space(depth) for the images of the Frame channel.
+ * @param[in] chnNum 通道的编号
+ * @param[in] depth 设置可获取的图像最大深度值
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
  * @remark
  *
- * 1.This interface is used to set the video frames of a channel cache. When the user sets caches for multi frame video image, he can access a certain number of consecutive image datas.
+ * 1.此接口用于设置某一通道缓存的视频图像帧数。当用户设置缓存多帧视频图像时，用户可以获取到一定数目的连续图像数据。
  *
- * 2.If the specified depth is 0, that does not require the system to cache the image of the channel, so users can not get the channel image data. The system default is not the channel cache image, so, depth is 0.
+ * 2.若指定depth为0，表示不需要系统为该通道缓存图像，故用户获取不到该通道图像数据。系统默认不为通道缓存图像，即depth默认为0。
  *
- * 3.System will automatically update the most old image data, to ensure that once the user begins to get new image data, you can get the latest image.
+ * 3.系统将自动更新最旧的图像数据，保证用户一旦开始获取，就可获取到最近最新的图像。
  *
- * 4.If the system can not get the image then it automatically stops the cache of the new image, so the user can not get a new image. Therefore it is recommended that the user makes sure to access and release the interface for use.
+ * 4.系统因获取不到图像而自动停止缓存新的图像，用户也不能获取新的图像。因此建议用户保证获取和释放接口配对使用。
  *
- * 5.System will automatically update the user that it has not yet acquired the old image data, to ensure that the cache image queue is for the most recent image. If the user can not guarantee acquisition speed, the whole process might end up receiving non-consecutive images.
+ * 5.系统将自动更新用户仍未获取的最旧的图像数据，保证缓存的图像队列为最近最新的图像。由于用户不能保证获取速度，导致获取的可能不是连续的图像。
  *
- * 6 this function can call the location, there is no requirement, but it can be done only once.
+ * 6.此函数可以调用位置，没有要求。但是只能使用一次。
  *
- * @attention none.
+ * @attention 无.
  */
 int IMP_FrameSource_SetFrameDepth(int chnNum, int depth);
 
 /**
  * @fn IMP_FrameSource_GetFrameDepth(int chnNum, int *depth);
  *
- * Obtains the depth of Frame FIFO.
+ * 获取的图像最大深度
  *
- * @param[in] chnNum  Id of frame channel
- * @param[out] depth  Pointer of the depth value.
+ * @param[in] chnNum 通道的编号
+ * @param[out] depth 获取的图像最大深度值
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none.
+ * @remark 无.
  *
- * @attention none.
+ * @attention 无.
  */
 int IMP_FrameSource_GetFrameDepth(int chnNum, int *depth);
 
 /**
  * @fn IMP_FrameSource_GetFrame(int chnNum, IMPFrameInfo **frame);
  *
- * Obtained image.
+ * 获取的图像
  *
- * @param[in] chnNum  Id of frame channel
- * @param[out] frame  Pointer of the frame information.
+ * @param[in] chnNum 通道的编号
+ * @param[out] frame 获取的图像
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
  * @remark
  *
- * 1.This interface can obtain the video image information of the specified channel. The image information mainly includes: the width of the image, the height, the pixel format and the image data starting address.
+ * 1.此接口可以获取指定通道的视频图像信息。图像信息主要包括：图像的宽度、高度、像素格式以及图片数据起始地址。
  *
- * 2.This interface will be valid only after the channel has been enabled.
+ * 2.此接口需在通道已启用后才有效。
  *
- * 3.It supports multiple access after release, but it is recommended to access and release the right interface for use.
+ * 3.支持多次获取后再释放，但建议获取和释放接口配对使用。
  *
- * 4.The default timeout for this interface is 2S, that means after 2S without receiving any images the will be a timeout.
+ * 4.该接口默认超时时间为 2s，即2s 内仍未获取到图像，则超时返回。
  *
- * @attention none.
+ * @attention 无.
  */
 int IMP_FrameSource_GetFrame(int chnNum, IMPFrameInfo **frame);
 
 /**
  * @fn IMP_FrameSource_GetTimedFrame(int chnNum, IMPFrameTimestamp *framets, int block, void *framedata, IMPFrameInfo *frame);
  *
- * Obtained image with specified time.
+ * 获取指定时间的图像
  *
- * @param[in] chnNum  Id of frame channel
- * @param[in] framets Time info
- * @param[in] block block info
- * @param[in] framedata Mem porinter used to store image
- * @param[in] frame Image info
+ * @param[in] chnNum 通道的编号
+ * @param[in] framets 时间信息
+ * @param[in] block 阻塞属性
+ * @param[in] framedata 拷贝图像的内存指针
+ * @param[in] frame 获取到图像信息
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
  * @remark
  *
- * 1.This interface can obtain the video image with certain time information of the specified channel. The image information mainly includes: the width of the image, the height, the pixel format and the image data starting address.
+ * 1.此接口可以获取指定通道指定时间的视频图像信息。图像信息主要包括：图像的宽度、高度、像素格式以及图片数据。
  *
- * 2.This interface will be valid only after the channel has been enabled.
+ * 2.此接口需在通道已启用后才有效。
  *
- * 3.Before this interface, IMP_FrameSource_SetMaxDelay and IMP_FrameSource_SetDelay should be used。
+ * 3.此接口需要先设置IMP_FrameSource_SetMaxDelay和IMP_FrameSource_SetDelay。
  *
- * @attention none.
+ * @attention 无.
  */
 int IMP_FrameSource_GetTimedFrame(int chnNum, IMPFrameTimestamp *framets, int block, void *framedata, IMPFrameInfo *frame);
 
 /**
  * @fn IMP_FrameSource_ReleaseFrame(int chnNum, IMPFrameInfo *frame);
  *
- * Release the frame
+ * 释放获取的图像
  *
- * @param[in] chnNum  ID of frame channel
- * @param[in] frame   Pointer of frame information.
+ * @param[in] chnNum 通道的编号
+ * @param[in] frame 释放获取的图像
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none.
+ * @remark 无.
  *
- * @attention none.
+ * @attention 无.
  */
 int IMP_FrameSource_ReleaseFrame(int chnNum, IMPFrameInfo *frame);
 
 /**
  * @fn IMP_FrameSource_SnapFrame(int chnNum, IMPPixelFormat fmt, int width, int height, void *framedata, IMPFrameInfo *frame);
  *
- * Get frames
+ * 获取图像
  *
- * @param[in] chnNum  ID of frame channel
- * @param[in] fmt     format of image
- * @param[in] width   width of image
- * @param[in] height  height of image
- * @param[in] framedata memory of image, provided by user
- * @param[in] frame     pointer of frame information.
+ * @param[in] chnNum 通道的编号
+ * @param[in] fmt    图像格式
+ * @param[in] width  图像宽度
+ * @param[in] height 图像高度
+ * @param[in] framedata 拷贝图像的内存指针
+ * @param[in] frame 获取到图像信息
  *
- * @retval 0          means success
- * @retval others     means failure, its value is an error code
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
  * @remark
  *
- * 1.This interface can snap a video image, format now only support NV12 and YUYV422, resolution support the same size of framesource resolution.
+ * 1.此接口可以获取一帧指定格式和大小的图像；目前格式支持NV12，YUYV422；大小和通道分辨率一致；不需要调用IMP_FrameSource_SetFrameDepth接口.
  *
- * 2.This interface does not need to be used with IMP_FrameSource_SetFrameDepth.
- *
- * 3.This interface will be valid only after the channel has been enabled.
+ * 2.此接口需在通道已启用后才有效。
  *
  *
- * @attention none.
+ * @attention 无.
  */
 int IMP_FrameSource_SnapFrame(int chnNum, IMPPixelFormat fmt, int width, int height, void *framedata, IMPFrameInfo *frame);
 
 /**
  * @fn IMP_FrameSource_SetMaxDelay(int chnNum, int maxcnt);
  *
- * Set max frame delay
+ * 设置最大延迟帧数
  *
- * @param[in] chnNum ID of frame channel
- * @param[in] maxcnt max frame delay
+ * @param[in] chnNum 通道的编号
+ * @param[in] maxcnt 最大延迟，单位帧
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none.
+ * @remark 无.
  *
- * @attention If need, this function should be called between IMP_FrameSource_CreateChn and IMP_FrameSource_EnableChn.
+ * @attention 使用时需要在函数IMP_FrameSource_CreateChn与IMP_FrameSource_EnableChn之间调用.
  */
 int IMP_FrameSource_SetMaxDelay(int chnNum, int maxcnt);
 
 /**
  * @fn IMP_FrameSource_GetMaxDelay(int chnNum, int *maxcnt);
  *
- * Get max frame delay
+ * 获取最大延迟帧数
  *
- * @param[in] chnNum ID of frame channel
- * @param[out] maxcnt max frame delay
+ * @param[in] chnNum 通道的编号
+ * @param[out] maxcnt 最大延迟，单位帧
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none.
+ * @remark 无.
  *
- * @attention Before calling the function, the frame channel has to been created.
+ * @attention 使用时需要在函数IMP_FrameSource_CreateChn之后.
  */
 int IMP_FrameSource_GetMaxDelay(int chnNum, int *maxcnt);
 
 /**
  * @fn IMP_FrameSource_SetDelay(int chnNum, int cnt);
  *
- * Set frame delay
+ * 设置延迟帧数
  *
- * @param[in] chnNum ID of frame channel
- * @param[in] cnt frame delay
+ * @param[in] chnNum 通道的编号
+ * @param[in] cnt 延迟，单位帧
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none.
+ * @remark 无.
  *
- * @attention If need, this function should be called after IMP_FrameSource_SetMaxDelay.
+ * @attention 使用时需要在函数IMP_FrameSource_SetMaxDelay之后调用.
  */
 int IMP_FrameSource_SetDelay(int chnNum, int cnt);
 
 /**
  * @fn IMP_FrameSource_GetDelay(int chnNum, int *cnt);
  *
- * Get frame delay
+ * 获取延迟帧数
  *
- * @param[in] chnNum ID of frame channel
- * @param[out] cnt frame delay
+ * @param[in] chnNum 通道的编号
+ * @param[out] cnt 延迟，单位帧
  *
- * @retval 0 means success.
- * @retval Other values means failure, its value is an error code.
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none.
+ * @remark 无.
  *
- * @attention Before calling the function, the frame channel has to been created.
+ * @attention 使用时需要在函数IMP_FrameSource_CreateChn之后.
  */
 int IMP_FrameSource_GetDelay(int chnNum, int *cnt);
 
 /**
  * @fn IMP_FrameSource_SetChnFifoAttr(int chnNum, IMPFSChnFifoAttr *attr);
  *
- * set channel's largest cache FIFO attribute
+ * 设置通道最大缓存FIFO属性
  *
- * @param[in] chnNum  	  ID of the frame channel
- * @param[in] attr	  	  FIFO attribute，includes FIFO maximum depth，unit(frame)；FIFO type.
+ * @param[in] chnNum 通道的编号
+ * @param[in] attr	FIFO属性，包括 FIFO最大深度，单位帧；FIFO 类型.
  *
- * @retval 0              means success
- * @retval other values   means failure，its value is an error code
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none.
+ * @remark 无.
  *
- * @attention use it in between of these two interfaces IMP_FrameSource_CreateChn, IMP_FrameSource_EnableChn.
+ * @attention 使用时需要在函数IMP_FrameSource_CreateChn与IMP_FrameSource_EnableChn之间调用.
  */
 int IMP_FrameSource_SetChnFifoAttr(int chnNum, IMPFSChnFifoAttr *attr);
 
 /**
  * @fn IMP_FrameSource_GetChnFifoAttr(int chnNum, IMPFSChnFifoAttr *attr);
  *
- * Get channel maximum caches FIFO attribute
+ * 获取通道最大缓存FIFO属性
  *
- * @param[in] chnNum 	  Channel ID
- * @param[out] attr	      FIFO attribute.
+ * @param[in] chnNum 通道的编号
+ * @param[out] attr	FIFO属性.
  *
- * @retval 0 			  means success
- * @retval other values   means failure，its value is an error code
+ * @retval 0 成功
+ * @retval 非0 失败，返回错误码
  *
- * @remark none.
+ * @remark 无.
  *
- * @attention Use it after calling IMP_FrameSource_CreateChn.
+ * @attention 使用时需要在函数IMP_FrameSource_CreateChn之后.
  */
 int IMP_FrameSource_GetChnFifoAttr(int chnNum, IMPFSChnFifoAttr *attr);
-
-/**
- * @brief IMP_FrameSource_SetPool(int chnNum, int poolID);
- *
- * bind channel to mempool, let chnNum malloc from pool.
- *
- * @param[in] chnNum		Channnel ID.
- * @param[in] poolID		Pool ID.
- *
- * @retval 0				means success.
- * @retval other values		mean failure.
- *
- * @remarks In order to solve the fragmentation of rmem, the channel FrameSource is bound to
- * the corresponding MemPool. The FrameSource applies for MEM in the MemPool. If it is not
- * called, the FrameSource will apply in rmem. At this time, there is the possibility of
- * fragmentation for rmem
- *
- * @attention: chnNum is greater than or equal to 0 and less than 32.
- */
-int IMP_FrameSource_SetPool(int chnNum, int poolID);
-
-/**
- * @brief IMP_FrameSource_GetPool(int chnNum);
- *
- * Get Pool ID by chnannel ID.
- *
- * @param[in] chnNum		Channel ID.
- *
- * @retval  >=0 && < 32     means success.
- * @retval other values		mean failure.
- *
- * @remarks obtains poolid through channelid, which cannot be used by customers temporarily
- *
- * @attention	none.
- */
-int IMP_FrameSource_GetPool(int chnNum);
-
-/**
- * @brief IMP_FrameSource_ChnStatQuery(int chnNum, FSChannelState *pstate);
- *
- * Get framesource by channel ID；0：close，1：open，2：run.
- *
- * @param[in] chnNum       Channel ID.
- *
- * @retval  >=0            means success.
- * @retval  <0			   mean failure.
- *
- * @remarks
- *
- * @attention none.
- */
-int IMP_FrameSource_ChnStatQuery(int chnNum, IMPFSChannelState *pstate);
-
-/**
- * @fn int IMP_FrameSource_SetChnRotate(int chnNum, uint8_t rotTo90, int width, int height);
- *
- * Enable FS channel rotation and configure rotation attributes
- *
- * @param[in] encChn 	Encoder channel number, value range: [0, @ref NR_MAX_ENC_CHN - 1]
- * @param[in] rotTo90 	0: disable, 1: rotate 90 ° counterclockwise, 2: rotate 90 ° clockwise
- * @param[in] width  	width Image width before rotation
- * @param[in] height 	height Image height before rotation
- *
- * @retval  >=0            means success.
- * @retval  <0			   mean failure.
- *
- * @remarks This API needs to be called before channel creation
- * @remarks To use this interface, the resolution must be 64 bit aligned
- * @remarks After using the modified interface, the width and height of the code should be set to the rotated width and height during the initialization of the coding channel
- * @remarks The FS channel rotation function cannot be used together with the encoding soft zoom function
- * @remarks Use this function to request an rmem memory to save the rotated frame data
- * @remarks The image rotation function is implemented by software, which will occupy computing resources. It is recommended that the resolution be set below 1280 * 704, and the frame rate should not exceed 15 frames
- */
-int IMP_FrameSource_SetChnRotate(int chnNum, uint8_t rotTo90, int width, int height);
 
 #ifdef __cplusplus
 #if __cplusplus

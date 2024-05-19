@@ -71,14 +71,14 @@ int IMP::framesource_init() {
 	IMPFSChnAttr fs_chn_attr = create_fs_attr();
 
 	LOG_INFO("IMP_FrameSource_CreateChn");
-    ret = IMP_FrameSource_CreateChn(1, &fs_chn_attr);
+    ret = IMP_FrameSource_CreateChn(0, &fs_chn_attr);
     if (ret < 0) {
 		LOG_INFO("IMP_FrameSource_CreateChn() == " + std::to_string(ret));
         return ret;
     }
 	LOG_INFO("IMP_FrameSource_CreateChn created");
 
-    ret = IMP_FrameSource_SetChnAttr(1, &fs_chn_attr);
+    ret = IMP_FrameSource_SetChnAttr(0, &fs_chn_attr);
     if (ret < 0) {
 		LOG_INFO("IMP_FrameSource_SetChnAttr() == " + std::to_string(ret));
         return ret;
@@ -87,7 +87,7 @@ int IMP::framesource_init() {
 
     IMPFSChnFifoAttr fifo;
 
-    ret = IMP_FrameSource_GetChnFifoAttr(1, &fifo);
+    ret = IMP_FrameSource_GetChnFifoAttr(0, &fifo);
     if (ret < 0) {
 		LOG_INFO("IMP_FrameSource_GetChnFifoAttr() == " + std::to_string(ret));
         return ret;
@@ -95,14 +95,14 @@ int IMP::framesource_init() {
 	LOG_INFO("IMP_FrameSource_GetChnFifoAttr set");
 
     fifo.maxdepth = 0;
-    ret = IMP_FrameSource_SetChnFifoAttr(1, &fifo);
+    ret = IMP_FrameSource_SetChnFifoAttr(0, &fifo);
     if (ret < 0) {
 		LOG_INFO("IMP_FrameSource_SetChnFifoAttr() == " + std::to_string(ret));
         return ret;
     }
 	LOG_INFO("IMP_FrameSource_SetChnFifoAttr set");
 
-    ret = IMP_FrameSource_SetFrameDepth(1, 0);
+    ret = IMP_FrameSource_SetFrameDepth(0, 0);
     if (ret < 0) {
 		LOG_INFO("IMP_FrameSource_SetFrameDepth() == " + std::to_string(ret));
         return ret;

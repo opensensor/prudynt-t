@@ -56,12 +56,12 @@ int main(int argc, const char *argv[]) {
         LOG_ERROR("IMP initialization failed.");
         return 1;
     }
-    if (Config::singleton()->motionEnable) {
-        if (motion.init()) {
-        std::cout << "Motion initialization failed." << std::endl;
-        return 1;
-        }
-    }
+//    if (Config::singleton()->motionEnable) {
+//        if (motion.init()) {
+//        std::cout << "Motion initialization failed." << std::endl;
+//        return 1;
+//        }
+//    }
     if (enc.init()) {
         LOG_ERROR("Encoder initialization failed.");
         return 1;
