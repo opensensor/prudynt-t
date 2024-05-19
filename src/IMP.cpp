@@ -70,7 +70,7 @@ int IMP::framesource_init() {
 
 	IMPFSChnAttr fs_chn_attr = create_fs_attr();
 
-	LOG_INFO("IMP_FrameSource_CreateChn")
+	LOG_INFO("IMP_FrameSource_CreateChn");
     ret = IMP_FrameSource_CreateChn(1, &fs_chn_attr);
     if (ret < 0) {
 		LOG_INFO("IMP_FrameSource_CreateChn() == " + std::to_string(ret));
