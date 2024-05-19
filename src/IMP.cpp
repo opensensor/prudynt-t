@@ -77,50 +77,50 @@ int IMP::framesource_init() {
 
     ret = IMP_FrameSource_SetChnRotate(0, rotation, rot_height, rot_width);
     if (ret < 0) {
-        LOG_DEBUG("IMP_FrameSource_SetChnRotate() == " + std::to_string(ret));
+        LOG_INFO("IMP_FrameSource_SetChnRotate() == " + std::to_string(ret));
         return ret;
     }
-    LOG_DEBUG("IMP_FrameSource_SetChnRotate == " + std::to_string(rotation));
+    LOG_INFO("IMP_FrameSource_SetChnRotate == " + std::to_string(rotation));
 #endif
 #endif
 
     ret = IMP_FrameSource_CreateChn(0, &fs_chn_attr);
     if (ret < 0) {
-        LOG_DEBUG("IMP_FrameSource_CreateChn() == " + std::to_string(ret));
+		LOG_INFO("IMP_FrameSource_CreateChn() == " + std::to_string(ret));
         return ret;
     }
-    LOG_DEBUG("IMP_FrameSource_CreateChn created");
+	LOG_INFO("IMP_FrameSource_CreateChn created");
 
     ret = IMP_FrameSource_SetChnAttr(0, &fs_chn_attr);
     if (ret < 0) {
-        LOG_DEBUG("IMP_FrameSource_SetChnAttr() == " + std::to_string(ret));
+		LOG_INFO("IMP_FrameSource_SetChnAttr() == " + std::to_string(ret));
         return ret;
     }
-    LOG_DEBUG("IMP_FrameSource_SetChnAttr set");
+	LOG_INFO("IMP_FrameSource_SetChnAttr set");
 
     IMPFSChnFifoAttr fifo;
 
     ret = IMP_FrameSource_GetChnFifoAttr(0, &fifo);
     if (ret < 0) {
-        LOG_DEBUG("IMP_FrameSource_GetChnFifoAttr() == " + std::to_string(ret));
+		LOG_INFO("IMP_FrameSource_GetChnFifoAttr() == " + std::to_string(ret));
         return ret;
     }
-    LOG_DEBUG("IMP_FrameSource_GetChnFifoAttr set");
+	LOG_INFO("IMP_FrameSource_GetChnFifoAttr set");
 
     fifo.maxdepth = 0;
     ret = IMP_FrameSource_SetChnFifoAttr(0, &fifo);
     if (ret < 0) {
-        LOG_DEBUG("IMP_FrameSource_SetChnFifoAttr() == " + std::to_string(ret));
+		LOG_INFO("IMP_FrameSource_SetChnFifoAttr() == " + std::to_string(ret));
         return ret;
     }
-    LOG_DEBUG("IMP_FrameSource_SetChnFifoAttr set");
+	LOG_INFO("IMP_FrameSource_SetChnFifoAttr set");
 
     ret = IMP_FrameSource_SetFrameDepth(0, 0);
     if (ret < 0) {
-        LOG_DEBUG("IMP_FrameSource_SetFrameDepth() == " + std::to_string(ret));
+		LOG_INFO("IMP_FrameSource_SetFrameDepth() == " + std::to_string(ret));
         return ret;
     }
-    LOG_DEBUG("IMP_FrameSource_SetFrameDepth set");
+	LOG_INFO("IMP_FrameSource_SetFrameDepth set");
 
     return ret;
 }
@@ -195,18 +195,18 @@ int IMP::system_init() {
     IMP_ISP_Tuning_SetAntiFlickerAttr(IMPISP_ANTIFLICKER_60HZ);
 	LOG_INFO("ISP Tuning Defaults set");
 
-//    ret = IMP_ISP_Tuning_SetSensorFPS(Config::singleton()->sensorFps, 1);
-//    if (ret < 0) {
-//		LOG_INFO("ERROR: IMP_ISP_Tuning_SetSensorFPS() == " + std::to_string(ret));
-//    }
-//	LOG_INFO("IMP_ISP_Tuning_SetSensorFPS == " + std::to_string(Config::singleton()->sensorFps));
-//
-//    // Set the ISP to DAY on launch
-//    ret = IMP_ISP_Tuning_SetISPRunningMode(IMPISP_RUNNING_MODE_DAY);
-//    if (ret < 0) {
-//		LOG_INFO("ERROR: IMP_ISP_Tuning_SetISPRunningMode() == " + std::to_string(ret));
-//    }
-//	LOG_INFO("IMP_ISP_Tuning_SetISPRunningMode == " + std::to_string(IMPISP_RUNNING_MODE_DAY));
+    ret = IMP_ISP_Tuning_SetSensorFPS(Config::singleton()->sensorFps, 1);
+    if (ret < 0) {
+		LOG_INFO("ERROR: IMP_ISP_Tuning_SetSensorFPS() == " + std::to_string(ret));
+    }
+	LOG_INFO("IMP_ISP_Tuning_SetSensorFPS == " + std::to_string(Config::singleton()->sensorFps));
+
+    // Set the ISP to DAY on launch
+    ret = IMP_ISP_Tuning_SetISPRunningMode(IMPISP_RUNNING_MODE_DAY);
+    if (ret < 0) {
+		LOG_INFO("ERROR: IMP_ISP_Tuning_SetISPRunningMode() == " + std::to_string(ret));
+    }
+	LOG_INFO("IMP_ISP_Tuning_SetISPRunningMode == " + std::to_string(IMPISP_RUNNING_MODE_DAY));
 
 
     return ret;
