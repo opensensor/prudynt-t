@@ -15,11 +15,11 @@ bool IMP::init() {
         return true;
     }
 
-    ret = framesource_init();
-    if (ret < 0) {
-        LOG_ERROR("Framesource Init Failed");
-        return true;
-    }
+//    ret = framesource_init();
+//    if (ret < 0) {
+//        LOG_ERROR("Framesource Init Failed");
+//        return true;
+//    }
 
     return false;
 }
@@ -105,7 +105,7 @@ int IMP::framesource_init() {
 //		LOG_INFO("IMP_FrameSource_GetChnFifoAttr() == " + std::to_string(ret));
 //        return ret;
 //    }
-	LOG_INFO("IMP_FrameSource_GetChnFifoAttr set");
+//	LOG_INFO("IMP_FrameSource_GetChnFifoAttr set");
 
     fifo.maxdepth = 0;
     ret = IMP_FrameSource_SetChnFifoAttr(0, &fifo);
