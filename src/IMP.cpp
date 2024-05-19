@@ -69,20 +69,10 @@ int IMP::framesource_init() {
     int rot_width = Config::singleton()->stream0width;
 
      IMPFSChnAttr fs_chn_attr = create_fs_attr();
-
-#if !defined(KERNEL_VERSION_4)
-#if defined(PLATFORM_T31)
-    // Set rotate before FS creation
-    // IMP_Encoder_SetFisheyeEnableStatus(0, 1);
-
-    ret = IMP_FrameSource_SetChnRotate(0, rotation, rot_height, rot_width);
-    if (ret < 0) {
-        LOG_INFO("IMP_FrameSource_SetChnRotate() == " + std::to_string(ret));
-        return ret;
-    }
-    LOG_INFO("IMP_FrameSource_SetChnRotate == " + std::to_string(rotation));
-#endif
-#endif
+	 if (fs_chn_attr == NULL) {
+		LOG_INFO("IMPFSChnAttr == NULL");
+		return -1;
+	 }
 
     ret = IMP_FrameSource_CreateChn(1, &fs_chn_attr);
     if (ret < 0) {
