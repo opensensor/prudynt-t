@@ -356,7 +356,7 @@ void Encoder::jpeg_snap() {
 
     while (Config::singleton()->stream1jpegEnable == 1) { // Check condition to exit loop
 
-#if defined(PLATFORM_T10) || defined(PLATFORM_T20) || defined(PLATFORM_T21) || defined(PLATFORM_T23) || defined(PLATFORM_T30)
+#if defined(PLATFORM_T10) || defined(PLATFORM_T20) || defined(PLATFORM_T21) || defined(PLATFORM_T23)
         IMPEncoderJpegeQl pstJpegeQl;
         MakeTables(Config::singleton()->stream1jpegQuality, &(pstJpegeQl.qmem_table[0]), &(pstJpegeQl.qmem_table[64]));
         pstJpegeQl.user_ql_en = 1;
