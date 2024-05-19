@@ -195,18 +195,18 @@ int IMP::system_init() {
     IMP_ISP_Tuning_SetAntiFlickerAttr(IMPISP_ANTIFLICKER_60HZ);
 	LOG_INFO("ISP Tuning Defaults set");
 
-    ret = IMP_ISP_Tuning_SetSensorFPS(Config::singleton()->sensorFps, 1);
-    if (ret < 0) {
-		LOG_INFO("ERROR: IMP_ISP_Tuning_SetSensorFPS() == " + std::to_string(ret));
-    }
-	LOG_INFO("IMP_ISP_Tuning_SetSensorFPS == " + std::to_string(Config::singleton()->sensorFps));
-
-    // Set the ISP to DAY on launch
-    ret = IMP_ISP_Tuning_SetISPRunningMode(IMPISP_RUNNING_MODE_DAY);
-    if (ret < 0) {
-		LOG_INFO("ERROR: IMP_ISP_Tuning_SetISPRunningMode() == " + std::to_string(ret));
-    }
-	LOG_INFO("IMP_ISP_Tuning_SetISPRunningMode == " + std::to_string(IMPISP_RUNNING_MODE_DAY));
+//    ret = IMP_ISP_Tuning_SetSensorFPS(Config::singleton()->sensorFps, 1);
+//    if (ret < 0) {
+//		LOG_INFO("ERROR: IMP_ISP_Tuning_SetSensorFPS() == " + std::to_string(ret));
+//    }
+//	LOG_INFO("IMP_ISP_Tuning_SetSensorFPS == " + std::to_string(Config::singleton()->sensorFps));
+//
+//    // Set the ISP to DAY on launch
+//    ret = IMP_ISP_Tuning_SetISPRunningMode(IMPISP_RUNNING_MODE_DAY);
+//    if (ret < 0) {
+//		LOG_INFO("ERROR: IMP_ISP_Tuning_SetISPRunningMode() == " + std::to_string(ret));
+//    }
+//	LOG_INFO("IMP_ISP_Tuning_SetISPRunningMode == " + std::to_string(IMPISP_RUNNING_MODE_DAY));
 
 
     return ret;
