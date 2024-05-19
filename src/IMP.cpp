@@ -145,37 +145,37 @@ int IMP::system_init() {
 
     ret = IMP_OSD_SetPoolSize(OSDPoolSize);
     if (ret < 0) {
-        LOG_DEBUG("Error: IMP_OSD_SetPoolSize == " + std::to_string(ret));
+		LOG_INFO("Error: IMP_OSD_SetPoolSize == " + std::to_string(ret));
         return ret;
     }
-    LOG_DEBUG("IMP_OSD_SetPoolSize == " + std::to_string(OSDPoolSize));
+	LOG_INFO("IMP_OSD_SetPoolSize == " + std::to_string(OSDPoolSize));
 
     ret = IMP_ISP_Open();
     if (ret < 0) {
-        LOG_DEBUG("Error: IMP_ISP_Open() == " + std::to_string(ret));
+		LOG_INFO("Error: IMP_ISP_Open() == " + std::to_string(ret));
         return ret;
     }
-    LOG_DEBUG("ISP Opened!");
+	LOG_INFO("ISP Opened!");
 
-//    IMPSensorInfo sinfo = create_sensor_info(Config::singleton()->sensorModel.c_str());
-//    ret = IMP_ISP_AddSensor(&sinfo);
-//    if (ret < 0) {
-//        LOG_DEBUG("Error: IMP_ISP_AddSensor() == " + std::to_string(ret));
-//    }
-//    LOG_DEBUG("Sensor Added");
+    IMPSensorInfo sinfo = create_sensor_info(Config::singleton()->sensorModel.c_str());
+    ret = IMP_ISP_AddSensor(&sinfo);
+    if (ret < 0) {
+		LOG_INFO("Error: IMP_ISP_AddSensor() == " + std::to_string(ret));
+    }
+	LOG_INFO("Sensor Added");
 
     ret = IMP_ISP_EnableSensor();
     if (ret < 0) {
-        LOG_DEBUG("Error: IMP_ISP_EnableSensor() == " + std::to_string(ret));
+		LOG_INFO("Error: IMP_ISP_EnableSensor() == " + std::to_string(ret));
     }
-    LOG_DEBUG("Sensor Enabled");
+	LOG_INFO("Sensor Enabled");
 
     ret = IMP_System_Init();
     if (ret < 0) {
-        LOG_DEBUG("Error: IMP_System_Init() == " + std::to_string(ret));
+		LOG_INFO("Error: IMP_System_Init() == " + std::to_string(ret));
         return ret;
     }
-    LOG_DEBUG("IMP System Initialized");
+	LOG_INFO("IMP System Initialized");
 
     //Enable tuning.
     //This is necessary to customize the sensor's image output.
