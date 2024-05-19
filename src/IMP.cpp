@@ -100,13 +100,14 @@ int IMP::framesource_init() {
 
     IMPFSChnFifoAttr fifo;
 
-    ret = IMP_FrameSource_GetChnFifoAttr(0, &fifo);
-    if (ret < 0) {
-		LOG_INFO("IMP_FrameSource_GetChnFifoAttr() == " + std::to_string(ret));
-        return ret;
-    }
+//    ret = IMP_FrameSource_GetChnFifoAttr(0, &fifo);
+//    if (ret < 0) {
+//		LOG_INFO("IMP_FrameSource_GetChnFifoAttr() == " + std::to_string(ret));
+//        return ret;
+//    }
 	LOG_INFO("IMP_FrameSource_GetChnFifoAttr set");
 
+	LOG_INFO
     fifo.maxdepth = 0;
     ret = IMP_FrameSource_SetChnFifoAttr(0, &fifo);
     if (ret < 0) {
