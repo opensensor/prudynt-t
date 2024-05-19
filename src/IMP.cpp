@@ -164,12 +164,6 @@ int IMP::system_init() {
     }
     LOG_DEBUG("Sensor Added");
 
-    ret = IMP_ISP_EnableSensor();
-    if (ret < 0) {
-        LOG_DEBUG("Error: IMP_ISP_EnableSensor() == " + std::to_string(ret));
-    }
-    LOG_DEBUG("Sensor Enabled");
-
     ret = IMP_System_Init();
     if (ret < 0) {
         LOG_DEBUG("Error: IMP_System_Init() == " + std::to_string(ret));
