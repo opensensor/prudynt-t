@@ -168,7 +168,7 @@ typedef struct {
 int IMP_FrameSource_CreateChn(int chnNum, IMPFSChnAttr *chn_attr);
 
 int FrameSourceInit();
-int EncoderInit()
+int EncoderInit();
 
 
 /**
