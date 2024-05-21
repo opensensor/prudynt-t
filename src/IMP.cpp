@@ -21,6 +21,8 @@ bool IMP::init() {
         return true;
     }
 
+	EncoderInit();
+
     return false;
 }
 
