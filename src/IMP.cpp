@@ -21,8 +21,6 @@ bool IMP::init() {
         return true;
     }
 
-	EncoderInit();
-
     return false;
 }
 
@@ -113,7 +111,9 @@ int IMP::framesource_init() {
     }
 	LOG_INFO("IMP_FrameSource_SetFrameDepth set");
 
-    return ret;
+	EncoderInit();
+
+	return ret;
 }
 
 int IMP::system_init() {
