@@ -167,6 +167,9 @@ typedef struct {
 
 int IMP_FrameSource_CreateChn(int chnNum, IMPFSChnAttr *chn_attr);
 
+int FrameSourceInit();
+
+
 /**
  * @fn IMP_FrameSource_DestroyChn(int chnNum)
  *
