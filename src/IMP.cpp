@@ -68,6 +68,8 @@ int IMP::framesource_init() {
     int rot_height = Config::singleton()->stream0height;
     int rot_width = Config::singleton()->stream0width;
 
+	FrameSourceInit();
+
 	IMPFSChnAttr fs_chn_attr = create_fs_attr();
 
 	LOG_INFO("IMP_FrameSource_CreateChn");
