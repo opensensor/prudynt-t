@@ -46,6 +46,17 @@ public:
         return val;
     }
 
+    // Wait for data with timeout (returns false on timeout)
+    bool wait_read_timeout(T *out, std::chrono::milliseconds timeout) {
+        std::unique_lock<std::mutex> lck(cv_mtx);
+        if (!write_cv.wait_for(lck, timeout, [this]() { return can_read(); })) {
+            return false; // Timeout
+        }
+        *out = msg_buffer.back();
+        msg_buffer.pop_back();
+        return true;
+    }
+
 private:
     bool can_read() {
         return !msg_buffer.empty();
