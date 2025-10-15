@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 #: "${PRUDYNT_CROSS:=ccache mipsel-linux-}"
-: "${PRUDYNT_CROSS:=/home/paul/output/wyze_cam3_t31x_gc2053_rtl8189ftv/host/bin/mipsel-linux-}"
+: "${PRUDYNT_CROSS:=mipsel-linux-}"
 TOP=$(pwd)
 
 prudynt() {
@@ -16,7 +16,32 @@ prudynt() {
 	if [[ -f Makefile ]]; then
 		make clean
 		PRUDYNT_ROOT="${TOP}" PRUDYNT_CROSS="${PRUDYNT_CROSS}" make -j$(nproc)
-		PRUDYNT_ROOT="${TOP}" PRUDYNT_CROSS="${PRUDYNT_CROSS}" make install
+
+		# Manual install instead of 'make install' to avoid permission issues
+		echo "Installing live555 libraries and headers..."
+		mkdir -p "${TOP}/3rdparty/install/lib"
+		mkdir -p "${TOP}/3rdparty/install/include/liveMedia"
+		mkdir -p "${TOP}/3rdparty/install/include/groupsock"
+		mkdir -p "${TOP}/3rdparty/install/include/UsageEnvironment"
+		mkdir -p "${TOP}/3rdparty/install/include/BasicUsageEnvironment"
+
+		# Copy libraries
+		cp -f liveMedia/*.so* "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+		cp -f liveMedia/*.a "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+		cp -f groupsock/*.so* "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+		cp -f groupsock/*.a "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+		cp -f UsageEnvironment/*.so* "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+		cp -f UsageEnvironment/*.a "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+		cp -f BasicUsageEnvironment/*.so* "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+		cp -f BasicUsageEnvironment/*.a "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+
+		# Copy headers
+		cp -f liveMedia/include/*.hh "${TOP}/3rdparty/install/include/liveMedia/" 2>/dev/null || true
+		cp -f groupsock/include/*.hh "${TOP}/3rdparty/install/include/groupsock/" 2>/dev/null || true
+		cp -f groupsock/include/*.h "${TOP}/3rdparty/install/include/groupsock/" 2>/dev/null || true
+		cp -f UsageEnvironment/include/*.hh "${TOP}/3rdparty/install/include/UsageEnvironment/" 2>/dev/null || true
+		cp -f BasicUsageEnvironment/include/*.hh "${TOP}/3rdparty/install/include/BasicUsageEnvironment/" 2>/dev/null || true
+
 		echo "live555 rebuilt successfully"
 	else
 		echo "Warning: live555 Makefile not found, skipping live555 rebuild"
@@ -164,6 +189,7 @@ deps() {
 	if [[ ! -d live ]]; then
 		echo "Cloning live555..."
 		git clone https://github.com/themactep/thingino-live555.git live
+		cd live
 	else
 		echo "live555 directory exists, checking for updates..."
 		cd live
@@ -188,7 +214,29 @@ deps() {
 	fi
 
 	PRUDYNT_ROOT="${TOP}" PRUDYNT_CROSS="${PRUDYNT_CROSS}" make -j$(nproc)
-	PRUDYNT_ROOT="${TOP}" PRUDYNT_CROSS="${PRUDYNT_CROSS}" make install
+
+	# Manual install instead of 'make install' to avoid permission issues
+	echo "Installing live555 libraries and headers..."
+	mkdir -p "${TOP}/3rdparty/install/lib"
+	mkdir -p "${TOP}/3rdparty/install/include/liveMedia"
+	mkdir -p "${TOP}/3rdparty/install/include/groupsock"
+	mkdir -p "${TOP}/3rdparty/install/include/UsageEnvironment"
+	mkdir -p "${TOP}/3rdparty/install/include/BasicUsageEnvironment"
+
+	# Copy libraries
+	cp -f liveMedia/*.so* "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+	cp -f groupsock/*.so* "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+	cp -f UsageEnvironment/*.so* "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+	cp -f BasicUsageEnvironment/*.so* "${TOP}/3rdparty/install/lib/" 2>/dev/null || true
+
+	# Copy headers
+	cp -f liveMedia/include/*.hh "${TOP}/3rdparty/install/include/liveMedia/" 2>/dev/null || true
+	cp -f groupsock/include/*.hh "${TOP}/3rdparty/install/include/groupsock/" 2>/dev/null || true
+	cp -f groupsock/include/*.h "${TOP}/3rdparty/install/include/groupsock/" 2>/dev/null || true
+	cp -f UsageEnvironment/include/*.hh "${TOP}/3rdparty/install/include/UsageEnvironment/" 2>/dev/null || true
+	cp -f BasicUsageEnvironment/include/*.hh "${TOP}/3rdparty/install/include/BasicUsageEnvironment/" 2>/dev/null || true
+
+	echo "live555 installation complete"
 	cd ../../
 
 	echo "import libimp"
@@ -280,12 +328,29 @@ deps() {
 		echo "Cloning faac..."
 		git clone --depth=1 https://github.com/knik0/faac.git
 		cd faac
-		sed -i 's/^#define MAX_CHANNELS 64/#define MAX_CHANNELS 2/' libfaac/coder.h
 	else
-		echo "faac directory exists, using existing version..."
+		echo "faac directory exists, checking for updates..."
 		cd faac
+		# Ensure clean state and update
+		git reset --hard HEAD 2>/dev/null || true
+		git clean -fdx 2>/dev/null || true
+		git pull origin master 2>/dev/null || true
 	fi
+
+	# Apply modifications and patches
+	sed -i 's/^#define MAX_CHANNELS 64/#define MAX_CHANNELS 2/' libfaac/coder.h
+	if ls ../../res/faac/*.patch >/dev/null 2>&1; then
+		for p in ../../res/faac/*.patch; do
+			patch -p1 -N < "$p" || true
+		done
+	fi
+
+	echo "Running bootstrap for faac..."
 	./bootstrap
+	if [ $? -ne 0 ]; then
+		echo "ERROR: faac bootstrap failed"
+		exit 1
+	fi
 	if [[ $STATIC_BUILD -eq 1 || $HYBRID_BUILD -eq 1 ]]; then
 		CC="${PRUDYNT_CROSS}gcc" ./configure --host mipsel-linux-gnu --prefix="$TOP/3rdparty/install" --enable-static --disable-shared
 	else

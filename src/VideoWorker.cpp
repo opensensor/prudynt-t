@@ -43,8 +43,6 @@ void VideoWorker::run()
          * 1. a client is connected (hasDataCallback)
          * 2. a jpeg is requested
          */
-        if (global_video[encChn]->hasDataCallback || run_for_jpeg)
-        {
             if (IMP_Encoder_PollingStream(encChn, cfg->general.imp_polling_timeout) == 0)
             {
                 IMPEncoderStream stream;
@@ -195,34 +193,6 @@ void VideoWorker::run()
                 LOG_DDEBUG("IMP_Encoder_PollingStream("
                            << encChn << ", " << cfg->general.imp_polling_timeout << ") timeout !");
             }
-        }
-        else if (global_video[encChn]->onDataCallback == nullptr && !global_restart_video
-                 && !global_video[encChn]->run_for_jpeg)
-        {
-            LOG_DDEBUG("VIDEO LOCK" << " channel:" << encChn << " hasCallbackIsNull:"
-                                    << (global_video[encChn]->onDataCallback == nullptr)
-                                    << " restartVideo:" << global_restart_video
-                                    << " runForJpeg:" << global_video[encChn]->run_for_jpeg);
-
-            global_video[encChn]->stream->stats.bps = 0;
-            global_video[encChn]->stream->stats.fps = 0;
-            global_video[encChn]->stream->osd.stats.bps = 0;
-            global_video[encChn]->stream->osd.stats.fps = 0;
-
-            std::unique_lock<std::mutex> lock_stream{mutex_main};
-            global_video[encChn]->active = false;
-            while (global_video[encChn]->onDataCallback == nullptr && !global_restart_video
-                   && !global_video[encChn]->run_for_jpeg)
-                global_video[encChn]->should_grab_frames.wait(lock_stream);
-
-            global_video[encChn]->active = true;
-            global_video[encChn]->is_activated.release();
-
-            // unlock audio
-            global_audio[0]->should_grab_frames.notify_one();
-
-            LOG_DDEBUG("VIDEO UNLOCK" << " channel:" << encChn);
-        }
     }
 }
 
@@ -252,12 +222,6 @@ void *VideoWorker::thread_entry(void *arg)
     LOG_DEBUG_OR_ERROR(ret, "IMP_Encoder_StartRecvPic(" << encChn << ")");
     if (ret != 0)
         return 0;
-
-    // Proactively request an IDR to ensure SPS/PPS are emitted promptly
-    IMP_Encoder_RequestIDR(encChn);
-    LOG_DEBUG("IMP_Encoder_RequestIDR(" << encChn << ")");
-    // Also schedule a couple more IDR requests in the first seconds, just in case
-    global_video[encChn]->idr_fix = 2;
 
     /* 'active' indicates, the thread is activly polling and grabbing images
      * 'running' describes the runlevel of the thread, if this value is set to false
