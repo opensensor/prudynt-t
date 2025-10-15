@@ -7,6 +7,9 @@
 #include "WorkerUtils.hpp"
 #include "TimestampManager.hpp"
 #include "globals.hpp"
+#include <fstream>
+#include <iterator>
+#include <thread>
 
 #undef MODULE
 #define MODULE "VideoWorker"
@@ -215,6 +218,113 @@ void *VideoWorker::thread_entry(void *arg)
 
     LOG_DEBUG("Start stream_grabber thread for stream " << encChn);
 
+    // Optional software test path: if configured, feed NAL units from a local H.264 Annex B file
+    const char *testPath = (encChn == 0) ? cfg->stream0.test_h264_path : cfg->stream1.test_h264_path;
+    if (testPath && testPath[0] != '\0')
+    {
+        std::ifstream ifs(testPath, std::ios::binary);
+        if (ifs)
+        {
+            std::vector<uint8_t> buf((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+            ifs.close();
+
+            auto find_start_code = [](const uint8_t *b, size_t off, size_t n, int *sc_len) -> long {
+                for (size_t k = off; k + 3 < n; ++k) {
+                    if (b[k] == 0x00 && b[k+1] == 0x00) {
+                        if (b[k+2] == 0x01) { if (sc_len) *sc_len = 3; return static_cast<long>(k); }
+                        if (k + 4 < n && b[k+2] == 0x00 && b[k+3] == 0x01) { if (sc_len) *sc_len = 4; return static_cast<long>(k); }
+                    }
+                }
+                return -1;
+            };
+
+            // Parse Annex B into discrete NAL payloads (without start codes)
+            std::vector<std::vector<uint8_t>> nals;
+            std::vector<int> types;
+            int sc_len = 0;
+            long i0 = find_start_code(buf.data(), 0, buf.size(), &sc_len);
+            if (i0 >= 0) {
+                long i = i0;
+                while (i >= 0 && static_cast<size_t>(i) < buf.size()) {
+                    int sc_len_cur = 0;
+                    size_t nal_start = static_cast<size_t>(i) + static_cast<size_t>(sc_len);
+                    long i_next = find_start_code(buf.data(), nal_start, buf.size(), &sc_len_cur);
+                    size_t nal_end = (i_next >= 0) ? static_cast<size_t>(i_next) : buf.size();
+                    if (nal_end > nal_start) {
+                        std::vector<uint8_t> payload;
+                        payload.insert(payload.end(), buf.begin() + nal_start, buf.begin() + nal_end);
+                        nals.emplace_back(std::move(payload));
+                        types.emplace_back(nals.back()[0] & 0x1F);
+                    }
+                    if (i_next < 0) break;
+                    i = i_next;
+                    sc_len = sc_len_cur;
+                }
+            }
+
+            // Signal start and mark active without touching IMP encoder
+            sh->has_started.release();
+            global_video[encChn]->active = true;
+            global_video[encChn]->running = true;
+
+            // Determine pacing
+            int fps_cfg = (encChn == 0) ? cfg->stream0.fps : cfg->stream1.fps;
+            if (fps_cfg <= 0) fps_cfg = 25;
+            auto frame_interval = std::chrono::milliseconds(1000 / fps_cfg);
+            bool frame_started = false;
+            auto next_deadline = std::chrono::steady_clock::now();
+
+            // Stream in a loop
+            while (global_video[encChn]->running)
+            {
+                for (size_t i = 0; i < nals.size() && global_video[encChn]->running; ++i)
+                {
+                    int t = types[i];
+                    if (!global_video[encChn]->idr && (t == 7 || t == 8 || t == 5))
+                        global_video[encChn]->idr = true;
+
+                    // Timestamp from TimestampManager (hardware clock source)
+                    struct timeval monotonic_time;
+                    TimestampManager::getInstance().getTimestamp(&monotonic_time);
+
+                    H264NALUnit nalu;
+                    nalu.time = monotonic_time;
+                    nalu.data = nals[i];
+
+                    if (!global_video[encChn]->msgChannel->write(nalu)) {
+                        LOG_ERROR("video channel:" << encChn << " !sink clogged!");
+                    } else {
+                        std::unique_lock<std::mutex> lock_stream{ global_video[encChn]->onDataCallbackLock };
+                        if (global_video[encChn]->onDataCallback)
+                            global_video[encChn]->onDataCallback();
+                    }
+
+                    // Pacing: sleep per-AU using AUD if present; otherwise on slice boundaries
+                    if (t == 9) {
+                        if (frame_started) {
+                            std::this_thread::sleep_until(next_deadline);
+                            next_deadline += frame_interval;
+                        } else {
+                            frame_started = true;
+                            next_deadline = std::chrono::steady_clock::now() + frame_interval;
+                        }
+                    } else if ((t == 1 || t == 5) && !frame_started) {
+                        std::this_thread::sleep_until(next_deadline);
+                        next_deadline += frame_interval;
+                    } else {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    }
+                }
+            }
+
+            return 0;
+        }
+        else
+        {
+            LOG_WARN("Test H.264 path set but failed to open: " << testPath << ", falling back to IMP capture");
+        }
+    }
+
     int ret;
 
     global_video[encChn]->imp_framesource = IMPFramesource::createNew(global_video[encChn]->stream,
@@ -236,16 +346,10 @@ void *VideoWorker::thread_entry(void *arg)
         return 0;
 
     // Proactively request an IDR to ensure SPS/PPS are emitted promptly
-    // This is critical for RTSP server initialization which waits for these NAL units
     IMP_Encoder_RequestIDR(encChn);
     LOG_DEBUG("IMP_Encoder_RequestIDR(" << encChn << ")");
-    // Also schedule a couple more IDR requests in the first seconds, just in case
     global_video[encChn]->idr_fix = 2;
 
-    /* 'active' indicates, the thread is activly polling and grabbing images
-     * 'running' describes the runlevel of the thread, if this value is set to false
-     *           the thread exits and cleanup all ressources
-     */
     global_video[encChn]->active = true;
     global_video[encChn]->running = true;
     VideoWorker worker(encChn);
