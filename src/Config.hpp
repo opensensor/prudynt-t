@@ -242,7 +242,6 @@ struct _stream {
     const char *rtsp_endpoint;
     const char *rtsp_info;
     const char *format{"JPEG"};
-    const char *test_h264_path;
     /* JPEG stream*/
     int jpeg_quality;
     int jpeg_refresh;

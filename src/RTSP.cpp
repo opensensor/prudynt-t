@@ -21,55 +21,10 @@ void RTSP::addSubsession(int chnNr, _stream &stream)
     bool have_sps = false;
     bool have_vps = false;
     bool is_h265 = strcmp(stream.format, "H265") == 0 ? true : false;
-    bool codec_determined = false; // auto-detect if config is wrong
-
     // Read from the stream until we capture the SPS and PPS. Only capture VPS if needed.
-    // Use timeout to avoid hanging forever if stream is not producing frames
-    int timeout_count = 0;
-    const int max_timeouts = 300; // 30 seconds total (300 * 100ms) - give encoder time to start
-    LOG_DEBUG("Waiting for SPS/PPS" << (is_h265 ? "/VPS" : "") << " from stream " << chnNr);
     while (!have_pps || !have_sps || (is_h265 && !have_vps))
     {
-        H264NALUnit unit;
-        if (!global_video[chnNr]->msgChannel->wait_read_timeout(&unit, std::chrono::milliseconds(100)))
-        {
-            timeout_count++;
-            if (timeout_count % 10 == 0) // Log every second
-            {
-                LOG_DEBUG("Still waiting for NAL units from stream " << chnNr
-                         << " (have_sps=" << have_sps << " have_pps=" << have_pps
-                         << " have_vps=" << have_vps << ") - " << timeout_count/10 << "s elapsed");
-            }
-            if (timeout_count >= max_timeouts)
-            {
-                LOG_ERROR("Timeout waiting for SPS/PPS/VPS for stream " << chnNr
-                         << " after " << max_timeouts/10 << " seconds - video worker may not be producing frames");
-                delete deviceSource;
-                return;
-            }
-            continue;
-        }
-        timeout_count = 0; // Reset timeout counter when we get data
-
-        // Auto-detect codec from incoming NALs if not yet determined
-        if (!codec_determined && !unit.data.empty())
-        {
-            uint8_t b0 = unit.data[0];
-            uint8_t h264Type = (b0 & 0x1F);
-            uint8_t h265Type = (b0 & 0x7E) >> 1;
-            bool looks_h264 = (h264Type == 7) || (h264Type == 8) || (h264Type == 5) || (h264Type == 1) || (h264Type == 9) || (h264Type == 6);
-            bool looks_h265 = (h265Type == 33) || (h265Type == 34) || (h265Type == 32) || (h265Type == 35) || (h265Type == 19);
-            if (looks_h264 && (!looks_h265 || is_h265)) {
-                if (is_h265) LOG_WARN("Config says H265 but stream appears to be H264; switching to H264");
-                is_h265 = false;
-                codec_determined = true;
-            } else if (looks_h265 && (!looks_h264 || !is_h265)) {
-                if (!is_h265) LOG_WARN("Config says H264 but stream appears to be H265; switching to H265");
-                is_h265 = true;
-                codec_determined = true;
-            }
-        }
-
+        H264NALUnit unit = global_video[chnNr]->msgChannel->wait_read();
         if (is_h265)
         {
             uint8_t nalType = (unit.data[0] & 0x7E) >> 1; // H265 NAL unit type extraction
@@ -152,7 +107,7 @@ void RTSP::addSubsession(int chnNr, _stream &stream)
 
     // Update RTSP status interface
     RTSPStatus::StreamInfo streamInfo;
-    streamInfo.format = (is_h265 ? std::string("H265") : std::string("H264"));
+    streamInfo.format = stream.format;
     streamInfo.fps = stream.fps;
     streamInfo.width = stream.width;
     streamInfo.height = stream.height;

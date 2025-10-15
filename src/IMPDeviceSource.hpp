@@ -23,6 +23,9 @@ public:
     IMPDeviceSource(UsageEnvironment &env, int encChn, std::shared_ptr<Stream> stream, const char *name);
     virtual ~IMPDeviceSource();
 
+    // Ensure downstream allocates buffers large enough for full NAL units (avoid truncation stalls)
+    virtual unsigned maxFrameSize() const override { return 1024 * 1024; }
+
 private:
 
     virtual void doGetNextFrame() override;
